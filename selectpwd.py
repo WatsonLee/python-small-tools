@@ -1,5 +1,6 @@
 #-*- coding: utf-8 -*-
 
+import multiprocessing
 import codecs
 import json
 import csv
@@ -7,6 +8,7 @@ import os
 
 src_dir = r"../sed_upload"
 test_path = r"../sed_upload/000001_xxin888/000001_xxin888.conf"
+PROCESS_NUM = 30
 
 '''
 返回Conf文件中columns字段对应的值
@@ -69,23 +71,28 @@ def SelectPwd(filepath, dirname, password_indexs, hashpwd_indexs, hashsalt_index
                 WriteListToTXT(hashsalt_file, values)
             hashsalt_file.close()
             
-def Run():
-    for parent, dirnames, filenames in os.walk(src_dir):
-        for dirname in dirnames:
-            sub_path = os.path.join(src_dir, dirname)
-            for filename in os.listdir(sub_path):
-                if filename.endswith(".conf"):
-                    column_str = LoadConfColumns(os.path.join(sub_path, filename))
-                    column_list = column_str.split(",")
-                    password_indexs = GetFeatureIndex(column_list, "password")
-                    hashpwd_indexs = GetFeatureIndex(column_list, "hashpwd")
-                    hashsalt_indexs = GetFeatureIndex(column_list, "hashsalt")
-                    for _filename in os.listdir(sub_path):
-                        if _filename.endswith(".csv"):
+def Run(dirnames):
+    for dirname in dirnames:
+        sub_path = os.path.join(src_dir, dirname)
+        for filename in os.listdir(sub_path):
+            if filename.endswith(".conf"):
+                column_str = LoadConfColumns(os.path.join(sub_path, filename))
+                column_list = column_str.split(",")
+                password_indexs = GetFeatureIndex(column_list, "password")
+                hashpwd_indexs = GetFeatureIndex(column_list, "hashpwd")
+                hashsalt_indexs = GetFeatureIndex(column_list, "hashsalt")
+                for _filename in os.listdir(sub_path):
+                    if _filename.endswith(".csv"):
                             SelectPwd(os.path.join(sub_path, _filename), dirname, password_indexs, hashpwd_indexs, hashsalt_indexs)
-                    
-
+                   
 
 if __name__ == "__main__":
-    Run()
+    dirnames = os.listdir(src_dir)
+    pool = multiprocessing.Pool(processes = PROCESS_NUM)
+    
+    for i in range(0, len(dirnames), PROCESS_NUM):
+        pool.apply_async(Run, (dirnames[i:i+PROCESS_NUM], ))
+    pool.close()
+    pool.join()
+    
     
