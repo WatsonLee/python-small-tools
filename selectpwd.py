@@ -89,9 +89,9 @@ def Run(dirnames):
 if __name__ == "__main__":
     dirnames = os.listdir(src_dir)
     pool = multiprocessing.Pool(processes = PROCESS_NUM)
-    
-    for i in range(0, len(dirnames), PROCESS_NUM):
-        pool.apply_async(Run, (dirnames[i:i+PROCESS_NUM], ))
+    group_num = int(dirnames.__len__()/PROCESS_NUM) + 1
+    for i in range(0, len(dirnames), group_num):
+        pool.apply_async(Run, (dirnames[i:i + group_num], ))
     pool.close()
     pool.join()
     
